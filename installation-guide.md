@@ -54,17 +54,17 @@ http://localhost/laraperso
 
 ### Exécuter le serveur de développement intégré
 ```bash
-php cli serve
+php dos serve
 ```
 
 ### Créer une migration
 ```bash
-php cli migrate:create nom_de_la_table
+php dos migrate:create nom_de_la_table
 ```
 
 ### Exécuter les migrations
 ```bash
-php cli migrate
+php dos migrate
 ```
 
 ## Remarque de sécurité
