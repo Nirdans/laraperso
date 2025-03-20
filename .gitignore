@@ -1,0 +1,17 @@
+/logs/*
+!/logs/.gitkeep
+/cache/*
+!/cache/.gitkeep
+/assets/uploads/*
+!/assets/uploads/.gitkeep
+.env
+.idea/
+.vscode/
+vendor/
+node_modules/
+*.log
+*.cache
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
