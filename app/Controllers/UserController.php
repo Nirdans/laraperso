@@ -9,20 +9,22 @@ class UserController
     
     public function __construct()
     {
-        $this->user = new User();
-        
         // Vérifier si l'utilisateur est connecté
-        if (!isset($_SESSION['user_id'])) {
+        if (!auth()) {
+            $_SESSION['error'] = "Vous devez être connecté pour accéder à cette page.";
             redirect('/login');
+            exit;
         }
+        
+        $this->user = new User();
     }
     
     /**
-     * Liste des utilisateurs (CRUD exemple)
+     * Affiche la liste des utilisateurs
      */
     public function index()
     {
-        $users = $this->user->all();
+        $users = $this->user->all('created_at', 'DESC');
         require BASE_PATH . '/views/users/index.php';
     }
     
@@ -51,8 +53,7 @@ class UserController
         if (empty($password)) $errors[] = "Le mot de passe est requis.";
         
         // Vérifier si l'email existe déjà
-        $existingUser = $this->user->findBy('email', $email);
-        if ($existingUser) {
+        if (!empty($email) && $this->user->emailExists($email)) {
             $errors[] = "Cet email est déjà utilisé.";
         }
         
@@ -67,7 +68,7 @@ class UserController
         $userId = $this->user->create([
             'name' => $name,
             'email' => $email,
-            'password' => password_hash($password, PASSWORD_DEFAULT)
+            'password' => $password
         ]);
         
         if ($userId) {
@@ -81,6 +82,7 @@ class UserController
     
     /**
      * Affiche le formulaire d'édition d'un utilisateur
+     * @param int $id ID de l'utilisateur
      */
     public function edit($id)
     {
@@ -89,6 +91,7 @@ class UserController
         if (!$user) {
             $_SESSION['error'] = "Utilisateur non trouvé.";
             redirect('/users');
+            return;
         }
         
         require BASE_PATH . '/views/users/edit.php';
@@ -96,12 +99,21 @@ class UserController
     
     /**
      * Met à jour un utilisateur
+     * @param int $id ID de l'utilisateur
      */
     public function update($id)
     {
+        $user = $this->user->find($id);
+        
+        if (!$user) {
+            $_SESSION['error'] = "Utilisateur non trouvé.";
+            redirect('/users');
+            return;
+        }
+        
         $name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING);
         $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-        $password = $_POST['password'] ?? null;
+        $password = $_POST['password'] ?? '';
         
         // Validation
         $errors = [];
@@ -109,71 +121,53 @@ class UserController
         if (empty($name)) $errors[] = "Le nom est requis.";
         if (empty($email)) $errors[] = "L'email est requis.";
         
-        // Vérifier si l'utilisateur existe
-        $existingUser = $this->user->find($id);
-        if (!$existingUser) {
-            $_SESSION['error'] = "Utilisateur non trouvé.";
-            redirect('/users');
-            return;
-        }
-        
-        // Vérifier si l'email existe déjà pour un autre utilisateur
-        $emailUser = $this->user->findBy('email', $email);
-        if ($emailUser && $emailUser['id'] != $id) {
-            $errors[] = "Cet email est déjà utilisé par un autre utilisateur.";
+        // Vérifier si l'email existe déjà (pour un autre utilisateur)
+        if (!empty($email) && $email !== $user['email'] && $this->user->emailExists($email)) {
+            $errors[] = "Cet email est déjà utilisé.";
         }
         
         if (count($errors) > 0) {
             $_SESSION['errors'] = $errors;
             $_SESSION['old'] = ['name' => $name, 'email' => $email];
-            redirect("/users/{$id}/edit");
+            redirect('/users/' . $id . '/edit');
             return;
         }
         
-        // Préparer les données à mettre à jour
+        // Mise à jour des données
         $data = [
             'name' => $name,
-            'email' => $email
+            'email' => $email,
         ];
         
-        // Mettre à jour le mot de passe si fourni
+        // Ajouter le mot de passe uniquement s'il est défini
         if (!empty($password)) {
-            $data['password'] = password_hash($password, PASSWORD_DEFAULT);
+            $data['password'] = $password;
         }
         
-        // Mettre à jour l'utilisateur
         $updated = $this->user->update($id, $data);
         
         if ($updated) {
             $_SESSION['success'] = "Utilisateur mis à jour avec succès.";
-            redirect('/users');
         } else {
-            $_SESSION['error'] = "Une erreur est survenue lors de la mise à jour de l'utilisateur.";
-            redirect("/users/{$id}/edit");
+            $_SESSION['error'] = "Aucune modification n'a été effectuée.";
         }
+        
+        redirect('/users');
     }
     
     /**
      * Supprime un utilisateur
+     * @param int $id ID de l'utilisateur
      */
     public function destroy($id)
     {
-        // Vérifier si l'utilisateur existe
-        $existingUser = $this->user->find($id);
-        if (!$existingUser) {
-            $_SESSION['error'] = "Utilisateur non trouvé.";
-            redirect('/users');
-            return;
-        }
-        
-        // Empêcher la suppression de son propre compte
+        // Vérifier si l'utilisateur est l'utilisateur connecté
         if ($id == $_SESSION['user_id']) {
             $_SESSION['error'] = "Vous ne pouvez pas supprimer votre propre compte.";
             redirect('/users');
             return;
         }
         
-        // Supprimer l'utilisateur
         $deleted = $this->user->delete($id);
         
         if ($deleted) {
@@ -190,14 +184,7 @@ class UserController
      */
     public function profile()
     {
-        $user = $this->user->find($_SESSION['user_id']);
-        
-        if (!$user) {
-            $_SESSION['error'] = "Utilisateur non trouvé.";
-            redirect('/logout');
-            return;
-        }
-        
+        $user = current_user();
         require BASE_PATH . '/views/users/profile.php';
     }
     
@@ -206,41 +193,34 @@ class UserController
      */
     public function updateProfile()
     {
-        $id = $_SESSION['user_id'];
+        $user = current_user();
+        
         $name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING);
         $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-        $current_password = $_POST['current_password'] ?? '';
-        $new_password = $_POST['new_password'] ?? '';
-        $password_confirmation = $_POST['password_confirmation'] ?? '';
+        $currentPassword = $_POST['current_password'] ?? '';
+        $newPassword = $_POST['new_password'] ?? '';
+        $passwordConfirmation = $_POST['password_confirmation'] ?? '';
         
         // Validation
         $errors = [];
-        $user = $this->user->find($id);
-        
-        if (!$user) {
-            $_SESSION['error'] = "Utilisateur non trouvé.";
-            redirect('/logout');
-            return;
-        }
         
         if (empty($name)) $errors[] = "Le nom est requis.";
         if (empty($email)) $errors[] = "L'email est requis.";
         
-        // Vérifier si l'email existe déjà pour un autre utilisateur
-        $emailUser = $this->user->findBy('email', $email);
-        if ($emailUser && $emailUser['id'] != $id) {
-            $errors[] = "Cet email est déjà utilisé par un autre utilisateur.";
+        // Vérifier si l'email existe déjà (pour un autre utilisateur)
+        if (!empty($email) && $email !== $user['email'] && $this->user->emailExists($email)) {
+            $errors[] = "Cet email est déjà utilisé.";
         }
         
-        // Si l'utilisateur veut changer son mot de passe
-        if (!empty($new_password)) {
-            if (empty($current_password)) {
+        // Validation du mot de passe si un nouveau mot de passe est défini
+        if (!empty($newPassword)) {
+            if (empty($currentPassword)) {
                 $errors[] = "Le mot de passe actuel est requis.";
-            } elseif (!password_verify($current_password, $user['password'])) {
+            } elseif (!password_verify($currentPassword, $user['password'])) {
                 $errors[] = "Le mot de passe actuel est incorrect.";
             }
             
-            if ($new_password !== $password_confirmation) {
+            if ($newPassword !== $passwordConfirmation) {
                 $errors[] = "Les nouveaux mots de passe ne correspondent pas.";
             }
         }
@@ -252,26 +232,27 @@ class UserController
             return;
         }
         
-        // Préparer les données à mettre à jour
+        // Mise à jour des données
         $data = [
             'name' => $name,
-            'email' => $email
+            'email' => $email,
         ];
         
-        // Mettre à jour le mot de passe si fourni
-        if (!empty($new_password)) {
-            $data['password'] = password_hash($new_password, PASSWORD_DEFAULT);
+        // Ajouter le nouveau mot de passe s'il est défini
+        if (!empty($newPassword)) {
+            $data['password'] = $newPassword;
         }
         
-        // Mettre à jour l'utilisateur
-        $updated = $this->user->update($id, $data);
+        $updated = $this->user->update($user['id'], $data);
         
         if ($updated) {
+            // Mettre à jour les informations de session
             $_SESSION['user_name'] = $name;
             $_SESSION['user_email'] = $email;
-            $_SESSION['success'] = "Profil mis à jour avec succès.";
+            
+            $_SESSION['success'] = "Votre profil a été mis à jour avec succès.";
         } else {
-            $_SESSION['error'] = "Une erreur est survenue lors de la mise à jour du profil.";
+            $_SESSION['error'] = "Aucune modification n'a été effectuée.";
         }
         
         redirect('/profile');

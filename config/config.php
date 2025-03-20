@@ -42,12 +42,12 @@ $database = [
 
 // Configuration SMTP
 $smtp = [
-    'host' => 'smtp.gmail.com',
-    'user' => 'votre-email@gmail.com',
-    'password' => 'votre-mot-de-passe',
-    'port' => 587,
-    'encryption' => 'tls',
-    'from_email' => 'no-reply@mondomaine.com',
+    'host' => 'sandrindossou.com',
+    'user' => 'no-reply@sandrindossou.com',
+    'password' => 'Cabesije12@',
+    'port' => 465,
+    'encryption' => 'ssl',
+    'from_email' => 'no-reply@sandrindossou.com',
     'from_name' => 'Mon Application',
 ];
 

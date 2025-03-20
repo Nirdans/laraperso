@@ -3,27 +3,49 @@ namespace App\Services;
 
 class Database
 {
+    /**
+     * Instance unique de la classe (pattern Singleton)
+     * @var Database|null
+     */
     private static $instance = null;
-    private $connection;
     
+    /**
+     * Instance PDO
+     * @var \PDO
+     */
+    private $pdo;
+    
+    /**
+     * Historique des requêtes exécutées (pour le débogage)
+     * @var array
+     */
+    private $queries = [];
+    
+    /**
+     * Constructeur privé (pattern Singleton)
+     */
     private function __construct()
     {
         global $db;
         
         try {
-            $dsn = "mysql:host={$db['host']};dbname={$db['name']};charset={$db['charset']}";
+            $dsn = "mysql:host={$db['host']};port={$db['port']};dbname={$db['name']};charset={$db['charset']}";
             $options = [
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
                 \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
                 \PDO::ATTR_EMULATE_PREPARES => false,
             ];
             
-            $this->connection = new \PDO($dsn, $db['user'], $db['password'], $options);
+            $this->pdo = new \PDO($dsn, $db['user'], $db['password'], $options);
         } catch (\PDOException $e) {
             die("Erreur de connexion à la base de données: " . $e->getMessage());
         }
     }
     
+    /**
+     * Obtient l'instance unique de la classe
+     * @return Database
+     */
     public static function getInstance()
     {
         if (self::$instance === null) {
@@ -32,79 +54,307 @@ class Database
         return self::$instance;
     }
     
-    public function getConnection()
-    {
-        return $this->connection;
-    }
-    
+    /**
+     * Exécute une requête SQL
+     * @param string $sql Requête SQL
+     * @param array $params Paramètres
+     * @return array|int Résultats de la requête ou nombre de lignes affectées
+     */
     public function query($sql, $params = [])
     {
-        $stmt = $this->connection->prepare($sql);
+        $this->logQuery($sql, $params);
+        
+        $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
-        return $stmt;
+        
+        // Si la requête est un SELECT, retourner les résultats
+        if (strpos(strtoupper($sql), 'SELECT') === 0) {
+            return $stmt->fetchAll();
+        }
+        
+        // Sinon, retourner le nombre de lignes affectées
+        return $stmt->rowCount();
     }
     
-    public function select($sql, $params = [])
+    /**
+     * Insère des données dans une table
+     * @param string $table Nom de la table
+     * @param array $data Données à insérer
+     * @return int|bool ID de la dernière ligne insérée ou false en cas d'échec
+     */
+    public function insert($table, $data)
     {
-        $stmt = $this->query($sql, $params);
+        $columns = array_keys($data);
+        $values = array_values($data);
+        $placeholders = array_fill(0, count($columns), '?');
+        
+        $sql = "INSERT INTO {$table} (" . implode(', ', $columns) . ") 
+                VALUES (" . implode(', ', $placeholders) . ")";
+        
+        $this->logQuery($sql, $values);
+        
+        $stmt = $this->pdo->prepare($sql);
+        $success = $stmt->execute($values);
+        
+        return $success ? $this->pdo->lastInsertId() : false;
+    }
+    
+    /**
+     * Met à jour des données dans une table
+     * @param string $table Nom de la table
+     * @param array $data Données à mettre à jour
+     * @param array $where Conditions
+     * @return int Nombre de lignes affectées
+     */
+    public function update($table, $data, $where)
+    {
+        $set = [];
+        $values = [];
+        
+        foreach ($data as $column => $value) {
+            $set[] = "{$column} = ?";
+            $values[] = $value;
+        }
+        
+        $whereClauses = [];
+        foreach ($where as $column => $value) {
+            $whereClauses[] = "{$column} = ?";
+            $values[] = $value;
+        }
+        
+        $sql = "UPDATE {$table} SET " . implode(', ', $set) . 
+               " WHERE " . implode(' AND ', $whereClauses);
+        
+        $this->logQuery($sql, $values);
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($values);
+        
+        return $stmt->rowCount();
+    }
+    
+    /**
+     * Supprime des données d'une table
+     * @param string $table Nom de la table
+     * @param array $where Conditions
+     * @return int Nombre de lignes affectées
+     */
+    public function delete($table, $where)
+    {
+        $whereClauses = [];
+        $values = [];
+        
+        foreach ($where as $column => $value) {
+            $whereClauses[] = "{$column} = ?";
+            $values[] = $value;
+        }
+        
+        $sql = "DELETE FROM {$table} WHERE " . implode(' AND ', $whereClauses);
+        
+        $this->logQuery($sql, $values);
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($values);
+        
+        return $stmt->rowCount();
+    }
+    
+    /**
+     * Commence une transaction
+     * @return bool
+     */
+    public function beginTransaction()
+    {
+        return $this->pdo->beginTransaction();
+    }
+    
+    /**
+     * Valide une transaction
+     * @return bool
+     */
+    public function commit()
+    {
+        return $this->pdo->commit();
+    }
+    
+    /**
+     * Annule une transaction
+     * @return bool
+     */
+    public function rollBack()
+    {
+        return $this->pdo->rollBack();
+    }
+    
+    /**
+     * Récupère toutes les lignes d'une table
+     * @param string $table Nom de la table
+     * @param string $orderBy Champ de tri
+     * @param string $order Direction du tri (ASC, DESC)
+     * @param int $limit Limite
+     * @param int $offset Offset
+     * @return array
+     */
+    public function getAll($table, $orderBy = null, $order = 'ASC', $limit = null, $offset = null)
+    {
+        $sql = "SELECT * FROM {$table}";
+        
+        if ($orderBy) {
+            $sql .= " ORDER BY {$orderBy} {$order}";
+        }
+        
+        if ($limit) {
+            $sql .= " LIMIT {$limit}";
+            
+            if ($offset) {
+                $sql .= " OFFSET {$offset}";
+            }
+        }
+        
+        $this->logQuery($sql);
+        
+        $stmt = $this->pdo->query($sql);
         return $stmt->fetchAll();
     }
     
-    public function selectOne($sql, $params = [])
+    /**
+     * Récupère une ligne d'une table par son ID
+     * @param string $table Nom de la table
+     * @param int $id ID
+     * @param string $idColumn Nom de la colonne ID
+     * @return array|false
+     */
+    public function getById($table, $id, $idColumn = 'id')
     {
-        $stmt = $this->query($sql, $params);
+        $sql = "SELECT * FROM {$table} WHERE {$idColumn} = ?";
+        
+        $this->logQuery($sql, [$id]);
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$id]);
+        
         return $stmt->fetch();
     }
     
-    public function insert($table, $data)
+    /**
+     * Récupère des lignes d'une table par une colonne
+     * @param string $table Nom de la table
+     * @param string $column Nom de la colonne
+     * @param mixed $value Valeur
+     * @return array
+     */
+    public function getBy($table, $column, $value)
     {
-        $columns = implode(', ', array_keys($data));
-        $placeholders = implode(', ', array_fill(0, count($data), '?'));
+        $sql = "SELECT * FROM {$table} WHERE {$column} = ?";
         
-        $sql = "INSERT INTO {$table} ({$columns}) VALUES ({$placeholders})";
+        $this->logQuery($sql, [$value]);
         
-        $this->query($sql, array_values($data));
-        return $this->connection->lastInsertId();
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$value]);
+        
+        return $stmt->fetchAll();
     }
     
-    public function update($table, $data, $where, $whereParams = [])
+    /**
+     * Récupère une ligne d'une table par une colonne
+     * @param string $table Nom de la table
+     * @param string $column Nom de la colonne
+     * @param mixed $value Valeur
+     * @return array|false
+     */
+    public function getFirstBy($table, $column, $value)
     {
-        $setClauses = [];
+        $sql = "SELECT * FROM {$table} WHERE {$column} = ? LIMIT 1";
+        
+        $this->logQuery($sql, [$value]);
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$value]);
+        
+        return $stmt->fetch();
+    }
+    
+    /**
+     * Compte le nombre de lignes d'une table
+     * @param string $table Nom de la table
+     * @param array $where Conditions
+     * @return int
+     */
+    public function count($table, $where = [])
+    {
+        $sql = "SELECT COUNT(*) AS count FROM {$table}";
         $params = [];
         
-        foreach ($data as $key => $value) {
-            $setClauses[] = "{$key} = ?";
-            $params[] = $value;
+        if (!empty($where)) {
+            $whereClauses = [];
+            foreach ($where as $column => $value) {
+                $whereClauses[] = "{$column} = ?";
+                $params[] = $value;
+            }
+            
+            $sql .= " WHERE " . implode(' AND ', $whereClauses);
         }
         
-        $setClause = implode(', ', $setClauses);
+        $this->logQuery($sql, $params);
         
-        $sql = "UPDATE {$table} SET {$setClause} WHERE {$where}";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
         
-        $this->query($sql, array_merge($params, $whereParams));
-        return true;
+        return (int) $stmt->fetch()['count'];
     }
     
-    public function delete($table, $where, $params = [])
+    /**
+     * Vérifie si une table existe
+     * @param string $table Nom de la table
+     * @return bool
+     */
+    public function tableExists($table)
     {
-        $sql = "DELETE FROM {$table} WHERE {$where}";
-        $this->query($sql, $params);
-        return true;
+        global $db;
+        
+        $sql = "SELECT COUNT(*) AS count FROM information_schema.tables 
+                WHERE table_schema = ? AND table_name = ?";
+        
+        $this->logQuery($sql, [$db['name'], $table]);
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$db['name'], $table]);
+        
+        return (int) $stmt->fetch()['count'] > 0;
     }
     
-    public function createTable($table, $columns)
+    /**
+     * Récupère l'objet PDO
+     * @return \PDO
+     */
+    public function getPdo()
     {
-        $columnDefinitions = [];
-        
-        foreach ($columns as $name => $definition) {
-            $columnDefinitions[] = "{$name} {$definition}";
+        return $this->pdo;
+    }
+    
+    /**
+     * Enregistre une requête dans l'historique
+     * @param string $sql Requête SQL
+     * @param array $params Paramètres
+     * @return void
+     */
+    private function logQuery($sql, $params = [])
+    {
+        if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
+            $this->queries[] = [
+                'sql' => $sql,
+                'params' => $params,
+                'time' => microtime(true)
+            ];
         }
-        
-        $columnString = implode(', ', $columnDefinitions);
-        
-        $sql = "CREATE TABLE IF NOT EXISTS {$table} ({$columnString})";
-        $this->query($sql);
-        
-        return true;
+    }
+    
+    /**
+     * Récupère l'historique des requêtes
+     * @return array
+     */
+    public function getQueries()
+    {
+        return $this->queries;
     }
 }

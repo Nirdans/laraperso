@@ -2,14 +2,17 @@
 namespace App\Controllers;
 
 use App\Models\User;
+use App\Services\Mailer;
 
 class AuthController
 {
     private $user;
+    private $mailer;
     
     public function __construct()
     {
         $this->user = new User();
+        $this->mailer = new Mailer();
     }
     
     /**
@@ -141,11 +144,17 @@ class AuthController
             $this->user->update($user['id'], ['remember_token' => $token]);
             
             // Envoi d'un email avec le lien de réinitialisation
-            // Dans un vrai projet, on utiliserait un service de mail
-            // Pour l'instant, affichons simplement le lien
             $resetLink = url("/reset-password/{$token}");
+            $emailSent = $this->mailer->sendPasswordReset($email, $resetLink, $user['name']);
             
-            $_SESSION['success'] = "Un lien de réinitialisation vous a été envoyé à l'adresse indiquée. Lien (pour démonstration) : {$resetLink}";
+            if ($emailSent) {
+                $_SESSION['success'] = "Un lien de réinitialisation a été envoyé à votre adresse email.";
+            } else {
+                // Email non envoyé, mais ne pas révéler l'information
+                $_SESSION['success'] = "Si un compte est associé à cet email, un lien de réinitialisation vous a été envoyé.";
+                // Log pour le débug
+                error_log("Échec de l'envoi d'email à {$email}");
+            }
         } else {
             // Ne pas révéler si l'email existe ou non
             $_SESSION['success'] = "Si un compte est associé à cet email, un lien de réinitialisation vous a été envoyé.";

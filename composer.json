@@ -1,0 +1,23 @@
+{
+    "name": "sandrindossou/personal-framework",
+    "description": "Un framework PHP léger et personnalisé par Sandrin DOSSOU",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sandrin DOSSOU",
+            "email": "contact@sandrindossou.com",
+            "homepage": "https://www.sandrindossou.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "phpmailer/phpmailer": "^6.8",
+        "respect/validation": "^2.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}

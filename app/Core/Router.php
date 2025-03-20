@@ -38,6 +38,44 @@ class Router
     }
     
     /**
+     * Vérifie si une route correspond à l'URI actuelle et extrait les paramètres
+     * 
+     * @param string $route La définition de la route (peut contenir des paramètres {param})
+     * @param string $uri L'URI actuelle
+     * @return array|false Tableau de paramètres ou false si pas de correspondance
+     */
+    private function matchRoute($route, $uri)
+    {
+        // Si la route ne contient pas de paramètres, faire une correspondance directe
+        if (strpos($route, '{') === false) {
+            return $route === $uri ? [] : false;
+        }
+        
+        // Convertir la définition de route en expression régulière
+        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '([^/]+)', $route);
+        $pattern = '#^' . $pattern . '$#';
+        
+        // Extraire les noms des paramètres
+        preg_match_all('/\{([a-zA-Z0-9_]+)\}/', $route, $paramNames);
+        $paramNames = $paramNames[1]; // Obtenir les noms sans les accolades
+        
+        // Vérifier si l'URI correspond au pattern et extraire les valeurs
+        if (preg_match($pattern, $uri, $paramValues)) {
+            array_shift($paramValues); // Supprimer la première valeur (correspondance complète)
+            
+            // Associer les noms et les valeurs des paramètres
+            $params = [];
+            foreach ($paramNames as $index => $name) {
+                $params[$name] = isset($paramValues[$index]) ? $paramValues[$index] : null;
+            }
+            
+            return $params;
+        }
+        
+        return false;
+    }
+    
+    /**
      * Analyse l'URL et exécute le callback correspondant
      */
     public function dispatch()
@@ -66,19 +104,25 @@ class Router
         }
         
         // Recherche de la route correspondante
-        if (isset(self::$routes[$method][$uri])) {
-            $callback = self::$routes[$method][$uri];
-            if (is_callable($callback)) {
-                return call_user_func($callback);
-            } elseif (is_string($callback)) {
-                // Format: Controller@method
-                list($controller, $method) = explode('@', $callback);
-                $controller = "App\\Controllers\\$controller";
-                if (class_exists($controller)) {
-                    $controller_obj = new $controller();
-                    if (method_exists($controller_obj, $method)) {
-                        return call_user_func([$controller_obj, $method]);
+        if (isset(self::$routes[$method])) {
+            foreach (self::$routes[$method] as $route => $callback) {
+                $params = $this->matchRoute($route, $uri);
+                
+                if ($params !== false) {
+                    if (is_callable($callback)) {
+                        return call_user_func_array($callback, array_values($params));
+                    } elseif (is_string($callback)) {
+                        // Format: Controller@method
+                        list($controller, $method) = explode('@', $callback);
+                        $controller = "App\\Controllers\\$controller";
+                        if (class_exists($controller)) {
+                            $controller_obj = new $controller();
+                            if (method_exists($controller_obj, $method)) {
+                                return call_user_func_array([$controller_obj, $method], array_values($params));
+                            }
+                        }
                     }
+                    break;
                 }
             }
         }

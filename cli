@@ -1,0 +1,108 @@
+#!/usr/bin/env php
+<?php
+/**
+ * CLI pour le framework
+ * 
+ * Utilisation:
+ * php cli [commande] [arguments]
+ * 
+ * Exemples:
+ * php cli migrate
+ * php cli migrate:create create_users_table
+ * php cli migrate:rollback
+ * 
+ * @author Sandrin DOSSOU <contact@sandrindossou.com>
+ */
+
+// Définir le chemin de base
+define('BASE_PATH', __DIR__);
+
+// Charger les configurations
+require_once BASE_PATH . '/config/config.php';
+
+// Charger les fonctions helper
+require_once BASE_PATH . '/helpers/functions.php';
+
+// Chargement automatique des classes
+spl_autoload_register(function ($class) {
+    $prefix = 'App\\';
+    $base_dir = BASE_PATH . '/app/';
+    
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        return;
+    }
+    
+    $relative_class = substr($class, $len);
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+    
+    if (file_exists($file)) {
+        require $file;
+    }
+});
+
+// Obtenir les arguments de la ligne de commande
+$args = $argv;
+array_shift($args); // Supprimer le nom du script
+
+// Commande par défaut
+$command = $args[0] ?? 'help';
+
+// Obtenir les arguments supplémentaires
+$commandArgs = array_slice($args, 1);
+
+// Traiter la commande
+switch ($command) {
+    case 'migrate':
+        $migrate = new \App\Commands\Migrate();
+        $migrate->run();
+        break;
+        
+    case 'migrate:rollback':
+        $migrate = new \App\Commands\Migrate();
+        $steps = isset($commandArgs[0]) ? (int) $commandArgs[0] : 1;
+        $migrate->rollback($steps);
+        break;
+        
+    case 'migrate:reset':
+        $migrate = new \App\Commands\Migrate();
+        $migrate->reset();
+        break;
+        
+    case 'migrate:refresh':
+        $migrate = new \App\Commands\Migrate();
+        $migrate->refresh();
+        break;
+        
+    case 'migrate:create':
+        if (empty($commandArgs)) {
+            echo "Erreur: Le nom de la migration est requis.\n";
+            echo "Exemple: php cli migrate:create create_users_table\n";
+            exit(1);
+        }
+        
+        $migrate = new \App\Commands\Migrate();
+        $migrate->create($commandArgs[0]);
+        break;
+        
+    case 'serve':
+        $port = isset($commandArgs[0]) ? (int) $commandArgs[0] : 8000;
+        echo "Démarrage du serveur de développement sur http://localhost:{$port}\n";
+        echo "Appuyez sur Ctrl+C pour arrêter le serveur.\n";
+        system("php -S localhost:{$port}");
+        break;
+        
+    case 'help':
+    default:
+        echo "Framework CLI\n";
+        echo "Développé par Sandrin DOSSOU - https://www.sandrindossou.com/\n\n";
+        echo "Commandes disponibles:\n";
+        echo "  migrate              - Exécute les migrations en attente\n";
+        echo "  migrate:create name  - Crée une nouvelle migration\n";
+        echo "  migrate:rollback [n] - Annule les n dernières migrations\n";
+        echo "  migrate:reset        - Annule toutes les migrations\n";
+        echo "  migrate:refresh      - Annule et réexécute toutes les migrations\n";
+        echo "  serve [port]         - Démarre un serveur de développement\n";
+        echo "  help                 - Affiche cette aide\n";
+        break;
+}
