@@ -106,8 +106,7 @@ class MonModele extends Model
 
 Créez un nouveau fichier dans `views/` :
 
-```php
-<?php 
+```php 
 $title = 'Mon Titre'; 
 ob_start(); 
 ?>
@@ -125,6 +124,10 @@ require BASE_PATH . '/views/layouts/main.php';
 
 Ce framework est distribué sous licence MIT. Vous êtes libre de l'utiliser, le modifier et le distribuer.
 
-## Crédits
+## Auteur
 
-Développé comme un outil personnel pour accélérer le développement de projets PHP. By Sandrin DOSSOU
+Développé par [Sandrin DOSSOU](https://www.sandrindossou.com/).
+
+---
+
+&copy; 2023 [Sandrin DOSSOU](https://www.sandrindossou.com/) - Tous droits réservés.

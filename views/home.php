@@ -7,7 +7,7 @@ ob_start();
     <h1 class="display-4">Bienvenue sur Mon Application</h1>
     <p class="lead">Cette structure de projet PHP personnalisée inclut tout ce dont vous avez besoin pour construire une application web robuste.</p>
     <hr class="my-4">
-    <p>Commencez à développer votre application dès maintenant.</p>
+    <p>Framework développé par <a href="https://www.sandrindossou.com/" target="_blank" class="text-decoration-none fw-bold">Sandrin DOSSOU</a>.</p>
     <?php if (!auth()): ?>
         <div class="d-flex gap-2">
             <a href="<?= url('/login') ?>" class="btn btn-primary">Se connecter</a>
@@ -53,6 +53,23 @@ ob_start();
                     <li><i class="bi bi-check-circle text-success"></i> Migration des tables</li>
                     <li><i class="bi bi-check-circle text-success"></i> Configuration multi-environnement</li>
                 </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">À propos de l'auteur</h5>
+                <p class="card-text">
+                    Ce framework a été développé par <strong>Sandrin DOSSOU</strong>, développeur web passionné.
+                    Pour en savoir plus sur mes projets et services, visitez mon site web.
+                </p>
+                <a href="https://www.sandrindossou.com/" target="_blank" class="btn btn-outline-primary">
+                    <i class="bi bi-globe"></i> www.sandrindossou.com
+                </a>
             </div>
         </div>
     </div>

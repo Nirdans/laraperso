@@ -1,6 +1,10 @@
 <?php
 /**
  * Point d'entrée principal de l'application
+ * 
+ * @author Sandrin DOSSOU <contact@sandrindossou.com>
+ * @link https://www.sandrindossou.com/
+ * @copyright 2023 Sandrin DOSSOU
  */
 
 // Définir le chemin de base

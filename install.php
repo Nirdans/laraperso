@@ -1,6 +1,7 @@
 <?php
 /**
  * Script d'installation de l'application
+ * Framework développé par Sandrin DOSSOU - https://www.sandrindossou.com/
  * Créer les tables nécessaires et le premier utilisateur administrateur
  */
 
@@ -144,7 +145,7 @@ display_message("N'oubliez pas de supprimer le fichier 'install.php' pour des ra
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Installation de l'application</title>
+    <title>Installation de l'application | Sandrin DOSSOU</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -176,6 +177,19 @@ display_message("N'oubliez pas de supprimer le fichier 'install.php' pour des ra
         .btn:hover {
             background-color: #2e59d9;
         }
+        .author {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .author a {
+            color: #4e73df;
+            text-decoration: none;
+        }
+        .author a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -191,6 +205,10 @@ display_message("N'oubliez pas de supprimer le fichier 'install.php' pour des ra
         </ol>
         
         <a href="<?= $current['domain'] ?>" class="btn">Accéder à l'application</a>
+    </div>
+    
+    <div class="author">
+        <p>Framework développé par <a href="https://www.sandrindossou.com/" target="_blank">Sandrin DOSSOU</a></p>
     </div>
 </body>
 </html>
