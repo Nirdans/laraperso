@@ -1,4 +1,14 @@
 {
+    "require": {
+        "nirdans/laraperso": "dev-main"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Nirdans/laraperso"
+        }
+    ],
+
     "name": "sandrindossou/personal-framework",
     "description": "Un framework PHP léger et personnalisé par Sandrin DOSSOU",
     "type": "project",
