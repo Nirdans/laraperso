@@ -4,9 +4,9 @@
  * 
  * @author Sandrin DOSSOU <contact@sandrindossou.com>
  * @link https://www.sandrindossou.com/
- * @copyright 2023 Sandrin DOSSOU
+ * @copyright 2025 Sandrin DOSSOU
  */
-
+ 
 // Définir le chemin de base
 define('BASE_PATH', __DIR__);
 

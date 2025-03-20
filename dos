@@ -41,6 +41,9 @@ spl_autoload_register(function ($class) {
     }
 });
 
+require BASE_PATH . '/vendor/autoload.php';
+require BASE_PATH . '/bootstrap/app.php';
+
 // Obtenir les arguments de la ligne de commande
 $args = $argv;
 array_shift($args); // Supprimer le nom du script
@@ -85,6 +88,33 @@ switch ($command) {
         $migrate->create($commandArgs[0]);
         break;
         
+    case 'make:migration':
+        if (!isset($argv[2])) {
+            die("Nom de migration requis\n");
+        }
+        $migrate->create($argv[2]);
+        break;
+        
+    case 'make:model':
+        if (empty($commandArgs)) {
+            echo "Erreur: Le nom du modèle est requis.\n";
+            echo "Exemple: php dos make:model User\n";
+            exit(1);
+        }
+        $maker = new \App\Commands\Make();
+        $maker->model($commandArgs[0]);
+        break;
+        
+    case 'make:controller':
+        if (empty($commandArgs)) {
+            echo "Erreur: Le nom du contrôleur est requis.\n";
+            echo "Exemple: php dos make:controller UserController\n";
+            exit(1);
+        }
+        $maker = new \App\Commands\Make();
+        $maker->controller($commandArgs[0]);
+        break;
+    
     case 'serve':
         $port = isset($commandArgs[0]) ? (int) $commandArgs[0] : 8000;
         echo "Démarrage du serveur de développement sur http://localhost:{$port}\n";
@@ -102,6 +132,8 @@ switch ($command) {
         echo "  migrate:rollback [n] - Annule les n dernières migrations\n";
         echo "  migrate:reset        - Annule toutes les migrations\n";
         echo "  migrate:refresh      - Annule et réexécute toutes les migrations\n";
+        echo "  make:model name      - Crée un nouveau modèle\n";
+        echo "  make:controller name - Crée un nouveau contrôleur\n";
         echo "  serve [port]         - Démarre un serveur de développement\n";
         echo "  help                 - Affiche cette aide\n";
         break;

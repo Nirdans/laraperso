@@ -1,133 +1,139 @@
 # Framework PHP Personnalisé
 
-Un framework PHP léger et personnalisé avec authentification, routage, et structure MVC.
+Un framework PHP léger et moderne pour le développement d'applications web.
 
-## Fonctionnalités
-
-- **Authentification complète** : Inscription, connexion, déconnexion, récupération de mot de passe
-- **Authentification sociale** : Intégration avec Google et Facebook
-- **Système de routage** : Routes GET, POST, PUT, DELETE facilement configurables
-- **Structure MVC** : Organisation claire du code suivant le modèle MVC
-- **ORM simple** : Interface élégante pour interagir avec la base de données
-- **Sécurité renforcée** : Protection CSRF, échappement des données, protection contre les injections SQL
-- **Configuration flexible** : Environnements de développement et de production
-
-## Prérequis
-
-- PHP 7.4 ou supérieur
-- MySQL 5.7 ou supérieur
-- Extension PDO PHP activée
-- Serveur web (Apache, Nginx, etc.) avec mod_rewrite activé
-
-## Installation
-
-1. Clonez ou téléchargez ce dépôt dans votre répertoire web
-2. Configurez votre serveur web pour pointer vers le répertoire du projet
-3. Configurez la base de données dans le fichier `config/config.php`
-4. Exécutez `install.php` pour initialiser la base de données
-5. Supprimez `install.php` après l'installation
-
-## Structure du projet
+## Structure du Projet
 
 ```
 /
-├── app/                  # Code de l'application
-│   ├── controllers/      # Contrôleurs
-│   ├── core/             # Classes fondamentales du framework
-│   ├── models/           # Modèles de données
-│   └── services/         # Services (DB, Auth, etc.)
-├── assets/               # Ressources web
-│   ├── css/              # Feuilles de styles
-│   ├── js/               # Scripts JavaScript
-│   ├── img/              # Images
-│   └── uploads/          # Fichiers téléchargés
-├── bootstrap/            # Fichiers de démarrage
-├── cache/                # Fichiers mis en cache
-├── config/               # Configuration
-├── helpers/              # Fonctions utilitaires
-├── logs/                 # Journaux
-├── routes/               # Définitions des routes
-├── views/                # Vues de l'application
-│   ├── auth/             # Vues d'authentification
-│   ├── errors/           # Pages d'erreur
-│   ├── layouts/          # Layouts des pages
-│   └── users/            # Vues de gestion utilisateurs
-├── .htaccess             # Configuration Apache
-├── index.php             # Point d'entrée
-└── install.php           # Script d'installation
+├── app/
+│   ├── Commands/         # Commandes CLI (ex: migrations)
+│   ├── Controllers/      # Contrôleurs de l'application
+│   ├── Core/            # Classes principales du framework
+│   ├── Middleware/      # Middlewares
+│   ├── Models/          # Modèles de données
+│   └── Services/        # Services (Auth, Mail, etc.)
+│
+├── assets/
+│   ├── css/            # Fichiers CSS
+│   ├── js/             # Fichiers JavaScript
+│   ├── img/            # Images
+│   └── uploads/        # Fichiers uploadés
+│
+├── bootstrap/
+│   └── app.php         # Fichier d'amorçage
+│
+├── config/
+│   ├── config.php      # Configuration principale
+│   └── config.example.php  # Example de configuration
+│
+├── database/
+│   ├── migrations/     # Fichiers de migration
+│   └── seeds/          # Données de test
+│
+├── public/
+│   └── index.php       # Point d'entrée
+│
+├── routes/
+│   └── web.php         # Définition des routes
+│
+├── views/
+│   ├── layouts/        # Templates de base
+│   ├── auth/           # Vues d'authentification
+│   ├── errors/         # Pages d'erreur
+│   └── components/     # Composants réutilisables
+│
+└── vendor/             # Dépendances Composer
 ```
 
-## Utilisation
+## Fonctionnalités Principales
 
-### Définir une nouvelle route
+- **Routage**: Système de routage simple avec support des méthodes HTTP
+- **MVC**: Architecture Model-View-Controller
+- **Base de données**: ORM simple avec migrations
+- **Authentification**: Support connexion/inscription + auth sociale
+- **Upload**: Gestion des fichiers avec validation
+- **Sécurité**: Protection CSRF, XSS, SQL injection
+- **Validation**: Validation des données avec messages d'erreur
+- **Cache**: Système de cache simple
+- **Mail**: Support d'envoi d'emails via SMTP
 
-Ouvrez le fichier `routes/web.php` et ajoutez une nouvelle route :
+## Configuration
 
-```php
-Router::get('/mon-chemin', 'MonController@maMethode');
+1. Copiez `config/config.example.php` vers `config/config.php`
+2. Configurez votre base de données et autres paramètres
+3. Créez la base de données
+4. Exécutez les migrations : `php console migrate`
+
+## Prérequis
+
+- PHP 7.4+
+- MySQL 5.7+
+- Extensions PHP requises:
+  - PDO
+  - mbstring
+  - xml
+  - curl
+  - gd
+
+## Installation
+
+```bash
+# Cloner le projet
+git clone [url-du-repo]
+
+# Installer les dépendances
+composer install
+
+# Configurer l'environnement
+cp config/config.example.php config/config.php
+
+# Créer la base de données et exécuter les migrations
+php dos migrate
 ```
 
-### Créer un contrôleur
+## Migration de la Base de Données
 
-Créez un nouveau fichier dans `app/controllers/` :
+Pour gérer vos migrations, utilisez les commandes suivantes dans le terminal :
 
-```php
-<?php
-namespace App\Controllers;
+```bash
+# Exécuter toutes les migrations en attente
+php dos migrate
 
-class MonController
-{
-    public function maMethode()
-    {
-        // Votre code ici
-        require BASE_PATH . '/views/ma-vue.php';
-    }
-}
+# Annuler la dernière migration
+php dos migrate:rollback
+
+# Réinitialiser toutes les migrations
+php dos migrate:reset
+
+# Réinitialiser et réexécuter toutes les migrations
+php dos migrate:refresh
+
+# Créer une nouvelle migration
+php dos make:migration create_users_table
 ```
 
-### Créer un modèle
+Les commandes disponibles :
+- `migrate` : Exécute toutes les migrations en attente
+- `migrate:rollback` : Annule la dernière migration
+- `migrate:reset` : Annule toutes les migrations
+- `migrate:refresh` : Réinitialise et réexécute toutes les migrations
+- `make:migration` : Crée un nouveau fichier de migration
 
-Créez un nouveau fichier dans `app/models/` :
+## Documentation
 
-```php
-<?php
-namespace App\Models;
+Pour plus de détails sur l'utilisation du framework, consultez les sections suivantes:
 
-class MonModele extends Model
-{
-    protected $table = 'ma_table';
-    protected $fillable = ['champ1', 'champ2', 'champ3'];
-    
-    // Méthodes personnalisées
-}
-```
-
-### Créer une vue
-
-Créez un nouveau fichier dans `views/` :
-
-```php 
-$title = 'Mon Titre'; 
-ob_start(); 
-?>
-
-<h1>Ma Vue</h1>
-<p>Mon contenu</p>
-
-<?php 
-$content = ob_get_clean(); 
-require BASE_PATH . '/views/layouts/main.php';
-?>
-```
+- [Guide de démarrage](docs/getting-started.md)
+- [Routing](docs/routing.md)
+- [Base de données](docs/database.md)
+- [Authentification](docs/auth.md)
+- [Validation](docs/validation.md)
 
 ## Licence
 
-Ce framework est distribué sous licence MIT. Vous êtes libre de l'utiliser, le modifier et le distribuer.
+Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ## Auteur
 
-Développé par [Sandrin DOSSOU](https://www.sandrindossou.com/).
-
----
-
-&copy; 2023 [Sandrin DOSSOU](https://www.sandrindossou.com/) - Tous droits réservés.
+Framework développé par [Sandrin DOSSOU](https://www.sandrindossou.com)
