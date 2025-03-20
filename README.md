@@ -6,44 +6,81 @@ Un framework PHP léger et moderne pour le développement d'applications web.
 
 ```
 /
-├── app/
-│   ├── Commands/         # Commandes CLI (ex: migrations)
-│   ├── Controllers/      # Contrôleurs de l'application
-│   ├── Core/            # Classes principales du framework
-│   ├── Middleware/      # Middlewares
-│   ├── Models/          # Modèles de données
-│   └── Services/        # Services (Auth, Mail, etc.)
+├── app/                    # Coeur de l'application
+│   ├── Commands/          # Commandes CLI
+│   │   ├── Make.php       # Générateur de code
+│   │   └── Migrate.php    # Gestion des migrations
+│   ├── Controllers/       # Contrôleurs
+│   ├── Core/             # Classes principales
+│   │   ├── App.php       # Class principale
+│   │   ├── Auth.php      # Authentification
+│   │   ├── Controller.php # Contrôleur de base
+│   │   ├── Database.php  # Connexion base de données
+│   │   ├── Model.php     # Modèle de base
+│   │   ├── Request.php   # Gestion des requêtes
+│   │   ├── Response.php  # Gestion des réponses
+│   │   ├── Router.php    # Routage
+│   │   ├── Session.php   # Gestion des sessions
+│   │   └── View.php      # Gestion des vues
+│   ├── Middleware/       # Middlewares
+│   │   ├── Auth.php      # Authentification
+│   │   └── Guest.php     # Accès invité 
+│   ├── Models/           # Modèles
+│   └── Services/         # Services
+│       ├── Mail.php      # Service d'emails
+│       └── Upload.php    # Gestion des uploads
 │
-├── assets/
-│   ├── css/            # Fichiers CSS
-│   ├── js/             # Fichiers JavaScript
-│   ├── img/            # Images
-│   └── uploads/        # Fichiers uploadés
+├── bootstrap/             # Démarrage application
+│   └── app.php           # Bootstrap principal
 │
-├── bootstrap/
-│   └── app.php         # Fichier d'amorçage
+├── config/               # Configuration
+│   ├── config.php       # Configuration principale
+│   └── config.example.php # Example de configuration
 │
-├── config/
-│   ├── config.php      # Configuration principale
-│   └── config.example.php  # Example de configuration
-│
-├── database/
-│   ├── migrations/     # Fichiers de migration
+├── database/             # Base de données
+│   ├── migrations/      # Fichiers de migration
 │   └── seeds/          # Données de test
 │
-├── public/
-│   └── index.php       # Point d'entrée
+├── helpers/              # Fonctions helper
+│   ├── assets.php       # Gestion des assets
+│   ├── auth.php         # Helpers authentification
+│   ├── form.php         # Helpers formulaires
+│   └── functions.php    # Fonctions générales
 │
-├── routes/
-│   └── web.php         # Définition des routes
+├── public/              # Dossier public
+│   ├── assets/         # Assets statiques
+│   │   ├── css/       # Fichiers CSS
+│   │   ├── js/        # Fichiers JavaScript
+│   │   └── img/       # Images
+│   ├── uploads/        # Fichiers uploadés
+│   ├── .htaccess      # Configuration Apache
+│   └── index.php      # Point d'entrée
 │
-├── views/
-│   ├── layouts/        # Templates de base
-│   ├── auth/           # Vues d'authentification
-│   ├── errors/         # Pages d'erreur
-│   └── components/     # Composants réutilisables
+├── routes/              # Routes
+│   ├── api.php        # Routes API
+│   └── web.php        # Routes Web
 │
-└── vendor/             # Dépendances Composer
+├── views/              # Vues de l'application
+│   ├── layouts/       # Layouts principaux
+│   ├── pages/         # Pages
+│   ├── auth/          # Authentication
+│   ├── admin/         # Administration
+│   ├── errors/        # Pages d'erreur
+│   └── components/    # Composants réutilisables
+│
+├── storage/            # Stockage
+│   ├── app/           # Fichiers application
+│   ├── logs/          # Logs
+│   └── cache/         # Cache
+│
+├── tests/             # Tests unitaires
+├── vendor/            # Dépendances Composer
+├── .env              # Variables d'environnement
+├── .gitignore        # Fichiers ignorés par Git
+├── composer.json     # Dépendances du projet
+├── dos              # CLI du framework
+├── LICENSE          # Licence du projet
+└── README.md        # Documentation
 ```
 
 ## Fonctionnalités Principales

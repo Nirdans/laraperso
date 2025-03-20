@@ -72,6 +72,16 @@ $jwt = [
     'expiration' => 3600, // en secondes (1 heure)
 ];
 
+// Configuration des assets
+$assets = [
+    'paths' => [
+        'public' => '/public',
+        'assets' => '/public/assets',
+        'uploads' => '/public/uploads',
+    ],
+    'upload_directory' => BASE_PATH . '/public/uploads',
+];
+
 // Charger les variables en fonction de l'environnement
 $current = $config[ENVIRONMENT];
 $db = $database[ENVIRONMENT];
